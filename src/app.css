@@ -1,3 +1,23 @@
 .app {
   height: 100%;
+  border: 1px solid grey;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  height: 50px;
+  background-color: grey;
+}
+
+.main {
+  flex: 1;
+  max-height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.image {
+  padding: 10px;
 }
