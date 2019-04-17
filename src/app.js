@@ -102,6 +102,14 @@ const App = ({
       )
     })
   }
+
+  const handleSelectAll = () => {
+    setSelectedRanges([ [ 0, data.frames.length - 1 ] ])
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedRanges([ ])
+  }
   // << event handlers
 
   useLayoutEffect(() => {
@@ -129,6 +137,12 @@ const App = ({
       <header className='header'>
         <span>{currentPage} done / {pageCount - currentPage} left</span>
         <div className='buttons'>
+          <button className='button' onClick={handleSelectAll}>
+            select all
+          </button>
+          <button className='button' onClick={handleDeselectAll}>
+            deselect all
+          </button>
           <Link
             className={hasPrevPage ? 'button' : 'buttonDisabled'}
             to={`/${currentPage - 1}`}
