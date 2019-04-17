@@ -1,20 +1,56 @@
 .app {
   height: 100%;
-  border: 1px solid grey;
-  display: flex;
-  flex-direction: column;
 }
 
-header {
-  height: 50px;
-  background-color: grey;
+.header {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 50px;
+}
+
+.buttons {
+  display: flex;
+}
+
+.button {
+  text-align: center;
+  min-width: 70px;
+  padding: 5px;
+  background-color: #3275fa;
+  color: white;
+  border: 0;
+  box-shadow: 2px 2px 2px 0px #ccc;
+  transition: transform 50ms ease-out;
+  cursor: pointer;
+}
+
+.buttonDisabled {
+  @extend .button;
+  background-color: lightgrey;
+  pointer-events: none;
+}
+
+.buttonSave {
+  background-color: #00c838;
+}
+
+.button:hover {
+  transform: scale(1.01, 1.01);
+}
+
+.button + .button {
+  margin-left: 10px;
 }
 
 .main {
-  flex: 1;
+  height: calc(100% - 100px);
   max-height: 100%;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
   justify-content: center;
 }
 

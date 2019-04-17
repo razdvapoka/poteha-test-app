@@ -13,7 +13,8 @@ module.exports = {
 
   devServer: {
     contentBase: path.resolve(__dirname, 'dist'),
-    hot: true
+    hot: true,
+    historyApiFallback: true
   },
 
   module: {
