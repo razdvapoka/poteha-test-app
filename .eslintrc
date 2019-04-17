@@ -1,3 +1,7 @@
 {
-  "extends": [ "standard", "standard-react" ]
+  "extends": [ "standard", "standard-react" ],
+  "rules": {
+    "react/prop-types": 0
+  },
+  "parser": "babel-eslint"
 }
