@@ -29,7 +29,7 @@ const isIndexSelected = (index, ranges) =>
 
 const App = ({
   data,
-  initialImgWidth,
+  initialImageWidth,
   imgRatio,
   match,
   history
@@ -38,7 +38,7 @@ const App = ({
   const currentPageIndex = currentPage - 1
 
   // >> state
-  const [ imgWidth ] = useState(initialImgWidth)
+  const [ imageWidth, setImageWidth ] = useState(initialImageWidth)
   const [ imagesPerPage, setImagesPerPage ] = useState(0)
   const [ selectedRanges, setSelectedRanges ] = useState(getSelectedRanges(data.frames))
   const [ selectionStartIndex, setSelectionStartIndex ] = useState(null)
@@ -52,8 +52,8 @@ const App = ({
       offsetHeight: height
     } = mainRef.current
     const firstImageIndex = imagesPerPage * currentPageIndex
-    const imagesPerRow = Math.floor(width / imgWidth)
-    const imgHeight = imgWidth / imgRatio
+    const imagesPerRow = Math.floor(width / imageWidth)
+    const imgHeight = imageWidth / imgRatio
     const rowCount = Math.floor(height / imgHeight)
     const pageCount = rowCount * imagesPerRow
 
@@ -110,6 +110,11 @@ const App = ({
   const handleDeselectAll = () => {
     setSelectedRanges([ ])
   }
+
+  const handleImgWidthChange = (e) => {
+    setImageWidth(e.target.value)
+    recalcImagesPerPage()
+  }
   // << event handlers
 
   useLayoutEffect(() => {
@@ -135,6 +140,19 @@ const App = ({
   return (
     <div className='app'>
       <header className='header'>
+        <div className='imageWidth'>
+          <input
+            type='range'
+            min={50}
+            max={400}
+            step={1}
+            onChange={handleImgWidthChange}
+            value={imageWidth}
+          />
+          <label>
+            {imageWidth}
+          </label>
+        </div>
         <span>{currentPage} done / {pageCount - currentPage} left</span>
         <div className='buttons'>
           <button className='button' onClick={handleSelectAll}>
@@ -172,7 +190,7 @@ const App = ({
               key={id}
               className={getImageClassName(realImgIndex)}
               src={url}
-              width={imgWidth}
+              width={imageWidth}
               onClick={() => handleImageClick(realImgIndex)}
               onContextMenu={(e) => {
                 e.preventDefault()
@@ -188,7 +206,7 @@ const App = ({
 
 App.defaultProps = {
   data,
-  initialImgWidth: 300,
+  initialImageWidth: 300,
   imgRatio: 300 / 177.5 // width / height
 }
 
