@@ -4,6 +4,29 @@ import { hot } from 'react-hot-loader/root'
 import './app.css'
 import data from './data.json'
 
+const tail = arr => arr[arr.length - 1]
+const head = arr => arr[0]
+const notEmpty = arr => arr.length > 0
+const isInRange = (index, range) => head(range) <= index && index <= tail(range)
+
+const getSelectedRanges = (images) =>
+  images
+    .reduce((ranges, image, imageIndex) => {
+      if (image.marked) {
+        const closesLastRange = notEmpty(ranges) && tail(tail(ranges)) + 1 === imageIndex
+        return closesLastRange
+          ? ranges
+            .slice(0, ranges.length - 1)
+            .concat([ [ head(tail(ranges)), imageIndex ] ])
+          : ranges.concat([ [ imageIndex ] ])
+      } else {
+        return ranges
+      }
+    }, [])
+
+const isIndexSelected = (index, ranges) =>
+  notEmpty(ranges.filter(range => isInRange(index, range)))
+
 const App = ({
   data,
   initialImgWidth,
@@ -14,8 +37,12 @@ const App = ({
   const currentPage = parseInt(match.params.page) || 1
   const currentPageIndex = currentPage - 1
 
+  // >> state
   const [ imgWidth ] = useState(initialImgWidth)
   const [ imagesPerPage, setImagesPerPage ] = useState(0)
+  const [ selectedRanges, setSelectedRanges ] = useState(getSelectedRanges(data.frames))
+  const [ selectionStartIndex, setSelectionStartIndex ] = useState(null)
+  // << state
 
   const mainRef = useRef(null)
 
@@ -45,6 +72,38 @@ const App = ({
     }
   }
 
+  // >> event handlers
+  const handleImageClick = (index) => {
+    if (!isIndexSelected(index, selectedRanges)) {
+      if (selectionStartIndex != null && selectionStartIndex <= index) {
+        const newRange = [ selectionStartIndex, index ]
+
+        const rangesWithoutAbsorbed = selectedRanges.filter(range => !(
+          head(range) > head(newRange) &&
+          tail(range) < tail(newRange)
+        ))
+        setSelectedRanges([ ...rangesWithoutAbsorbed, newRange ])
+        setSelectionStartIndex(null)
+      } else {
+        setSelectionStartIndex(index)
+      }
+    }
+  }
+
+  const handleImageRightClick = (index) => setSelectedRanges(
+    selectedRanges.filter(range => !isInRange(index, range))
+  )
+
+  const handleSaveClick = () => {
+    console.log({
+      ...data,
+      frames: data.frames.filter(
+        (_, index) => isIndexSelected(index, selectedRanges)
+      )
+    })
+  }
+  // << event handlers
+
   useLayoutEffect(() => {
     window.addEventListener('resize', recalcImagesPerPage)
     return () => {
@@ -55,17 +114,20 @@ const App = ({
   useLayoutEffect(recalcImagesPerPage, [ mainRef.current ])
 
   const pageCount = Math.ceil(data.frames.length / imagesPerPage)
-
   const hasNextPage = currentPage < pageCount
   const hasPrevPage = currentPage > 1
-  const handleSaveClick = () => {
-    console.log(data.frames[0])
-  }
+
+  const getImageClassName = (index) =>
+    index === selectionStartIndex
+      ? 'imageSelectionStart'
+      : isIndexSelected(index, selectedRanges)
+        ? 'imageSelected'
+        : 'image'
 
   return (
     <div className='app'>
       <header className='header'>
-        <span>{currentPage}/{pageCount}</span>
+        <span>{currentPage} done / {pageCount - currentPage} left</span>
         <div className='buttons'>
           <Link
             className={hasPrevPage ? 'button' : 'buttonDisabled'}
@@ -89,14 +151,22 @@ const App = ({
         {data.frames.slice(
           currentPageIndex * imagesPerPage,
           (currentPageIndex + 1) * imagesPerPage
-        ).map(({ id, url }) => (
-          <img
-            key={id}
-            className='image'
-            src={url}
-            width={imgWidth}
-          />
-        ))}
+        ).map(({ id, url }, imgIndex) => {
+          const realImgIndex = currentPageIndex * imagesPerPage + imgIndex
+          return (
+            <img
+              key={id}
+              className={getImageClassName(realImgIndex)}
+              src={url}
+              width={imgWidth}
+              onClick={() => handleImageClick(realImgIndex)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                handleImageRightClick(realImgIndex)
+              }}
+            />
+          )
+        })}
       </main>
     </div>
   )

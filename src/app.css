@@ -57,3 +57,15 @@
 .image {
   padding: 10px;
 }
+
+.imageSelected {
+  @extend .image;
+  outline: 2px solid red;
+  outline-offset: -10px;
+}
+
+.imageSelectionStart {
+  @extend .image;
+  outline: 2px solid yellow;
+  outline-offset: -10px;
+}
