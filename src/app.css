@@ -2,80 +2,35 @@
   height: 100%;
 }
 
-.header {
-  min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 50px;
-}
-
-.buttons {
-  display: flex;
-}
-
-.button {
-  text-align: center;
-  min-width: 70px;
-  padding: 5px;
-  background-color: #3275fa;
-  color: white;
-  border: 0;
-  box-shadow: 2px 2px 2px 0px #ccc;
-  transition: transform 50ms ease-out;
-  cursor: pointer;
-}
-
-.buttonDisabled {
-  @extend .button;
-  background-color: lightgrey;
-  pointer-events: none;
-}
-
-.buttonSave {
-  background-color: #00c838;
-}
-
-.button:hover {
-  transform: scale(1.01, 1.01);
-}
-
-.button + .button,
-.button + .buttonDisabled {
-  margin-left: 10px;
-}
-
 .main {
   height: calc(100% - 100px);
   max-height: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: flex-start;
+  display: grid;
   justify-content: center;
+  width: 90%;
+  margin: 0 auto;
 }
 
 .image {
-  padding: 10px;
+  transition: opacity 0.1s ease-out;
+  cursor: pointer;
+}
+
+.image:hover {
+  opacity: 0.7;
 }
 
 .imageSelected {
   @extend .image;
   outline: 2px solid red;
-  outline-offset: -10px;
+}
+
+.imageSelected:hover {
+  opacity: 1;
+  cursor: default;
 }
 
 .imageSelectionStart {
   @extend .image;
   outline: 2px solid yellow;
-  outline-offset: -10px;
-}
-
-.imageWidth {
-  display: flex;
-  align-items: center;
-}
-
-.imageWidth label {
-  margin-left: 20px;
 }

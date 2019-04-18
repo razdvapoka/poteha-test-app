@@ -1,8 +1,12 @@
-import React, { useRef, useLayoutEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { hot } from 'react-hot-loader/root'
 import './app.css'
+import React, {
+  useRef,
+  useLayoutEffect,
+  useState
+} from 'react'
+import { hot } from 'react-hot-loader/root'
 import data from './data.json'
+import Header from './header'
 
 const tail = arr => arr[arr.length - 1]
 const head = arr => arr[0]
@@ -13,8 +17,11 @@ const getSelectedRanges = (images) =>
   images
     .reduce((ranges, image, imageIndex) => {
       if (image.marked) {
-        const closesLastRange = notEmpty(ranges) && tail(tail(ranges)) + 1 === imageIndex
-        return closesLastRange
+        const isClosingLastRange = (
+          notEmpty(ranges) &&
+          tail(tail(ranges)) + 1 === imageIndex
+        )
+        return isClosingLastRange
           ? ranges
             .slice(0, ranges.length - 1)
             .concat([ [ head(tail(ranges)), imageIndex ] ])
@@ -30,47 +37,81 @@ const isIndexSelected = (index, ranges) =>
 const App = ({
   data,
   initialImageWidth,
-  imgRatio,
+  gridGap,
+  imageRatio,
+  maxImageWidth,
+  minImageWidth,
   match,
   history
 }) => {
-  const currentPage = parseInt(match.params.page) || 1
-  const currentPageIndex = currentPage - 1
+  const mainRef = useRef(null)
 
   // >> state
   const [ imageWidth, setImageWidth ] = useState(initialImageWidth)
-  const [ imagesPerPage, setImagesPerPage ] = useState(0)
+  const [ { rows, columns }, setGridDimensions ] = useState({ rows: 0, columns: 0 })
   const [ selectedRanges, setSelectedRanges ] = useState(getSelectedRanges(data.frames))
   const [ selectionStartIndex, setSelectionStartIndex ] = useState(null)
   // << state
 
-  const mainRef = useRef(null)
+  // >> state derived variables
+  const currentPage = parseInt(match.params.page) || 1
+  const currentPageIndex = currentPage - 1
+  const imagesPerPage = rows * columns
+  const imageHeight = imageWidth / imageRatio
+  const pageCount = Math.ceil(data.frames.length / imagesPerPage)
+  // << state derived variables
 
-  const recalcImagesPerPage = () => {
+  // >> helpers
+  const recalcGrid = () => {
     const {
       offsetWidth: width,
       offsetHeight: height
     } = mainRef.current
-    const firstImageIndex = imagesPerPage * currentPageIndex
-    const imagesPerRow = Math.floor(width / imageWidth)
-    const imgHeight = imageWidth / imgRatio
-    const rowCount = Math.floor(height / imgHeight)
-    const pageCount = rowCount * imagesPerRow
+    const newColumns = Math.floor(width / imageWidth)
+    const newRows = Math.floor(height / (imageHeight + gridGap * 2))
+    const newImagesPerPage = newColumns * newRows
 
     // don't update if the window is too small
-    if (pageCount) {
-      setImagesPerPage(pageCount)
+    if (newImagesPerPage) {
+      setGridDimensions({ rows: newRows, columns: newColumns })
 
-      if (data.frames.length < pageCount * currentPage) {
-        history.push(`/${Math.floor(data.frames.length / pageCount) + 1}`)
+      // if current page value from url is too big
+      if (data.frames.length < newImagesPerPage * currentPage) {
+        history.push(`/${Math.floor(data.frames.length / newImagesPerPage) + 1}`)
       }
 
-      // recalc current page on resize (skip this step on mount)
-      if (imagesPerPage) {
-        history.push(`/${Math.floor(firstImageIndex / pageCount) + 1}`)
+      // recalc current page on resize
+      if (imagesPerPage) { // (skip this step on mount)
+        const firstImageIndex = imagesPerPage * currentPageIndex
+        history.push(`/${Math.floor(firstImageIndex / newImagesPerPage) + 1}`)
       }
     }
   }
+
+  const getImageClassName = (index) =>
+    index === selectionStartIndex
+      ? 'imageSelectionStart'
+      : isIndexSelected(index, selectedRanges)
+        ? 'imageSelected'
+        : 'image'
+
+  const getGridStyle = () => ({
+    gridTemplateColumns: `repeat(
+      ${columns},
+      ${imageWidth}px
+    )`,
+    gridTemplateRows: `repeat(
+      ${rows},
+      ${imageHeight}px
+    )`,
+    gridGap
+  })
+
+  const getImageStyle = (index) => ({
+    gridColumn: `${(index % columns) + 1} / span 1`,
+    gridRow: `${Math.floor(index / columns) + 1} / span 1`
+  })
+  // << helpers
 
   // >> event handlers
   const handleImageClick = (index) => {
@@ -113,73 +154,40 @@ const App = ({
 
   const handleImgWidthChange = (e) => {
     setImageWidth(e.target.value)
-    recalcImagesPerPage()
+    recalcGrid()
   }
   // << event handlers
 
+  // >> effects
   useLayoutEffect(() => {
-    window.addEventListener('resize', recalcImagesPerPage)
+    window.addEventListener('resize', recalcGrid)
     return () => {
-      window.removeEventListener('resize', recalcImagesPerPage)
+      window.removeEventListener('resize', recalcGrid)
     }
   })
 
-  useLayoutEffect(recalcImagesPerPage, [ mainRef.current ])
-
-  const pageCount = Math.ceil(data.frames.length / imagesPerPage)
-  const hasNextPage = currentPage < pageCount
-  const hasPrevPage = currentPage > 1
-
-  const getImageClassName = (index) =>
-    index === selectionStartIndex
-      ? 'imageSelectionStart'
-      : isIndexSelected(index, selectedRanges)
-        ? 'imageSelected'
-        : 'image'
+  // inital grid calculation on <main>'s mount
+  useLayoutEffect(recalcGrid, [ mainRef.current ])
+  // << effects
 
   return (
     <div className='app'>
-      <header className='header'>
-        <div className='imageWidth'>
-          <input
-            type='range'
-            min={50}
-            max={400}
-            step={1}
-            onChange={handleImgWidthChange}
-            value={imageWidth}
-          />
-          <label>
-            {imageWidth}
-          </label>
-        </div>
-        <span>{currentPage} done / {pageCount - currentPage} left</span>
-        <div className='buttons'>
-          <button className='button' onClick={handleSelectAll}>
-            select all
-          </button>
-          <button className='button' onClick={handleDeselectAll}>
-            deselect all
-          </button>
-          <Link
-            className={hasPrevPage ? 'button' : 'buttonDisabled'}
-            to={`/${currentPage - 1}`}
-            disabled={hasPrevPage}
-          >
-            prev
-          </Link>
-          {hasNextPage ? (
-            <Link className='button' to={`/${currentPage + 1}`}>
-              next
-            </Link>
-          ) : (
-            <button className='button buttonSave' onClick={handleSaveClick}>
-              save
-            </button>
-          )}
-        </div>
-      </header>
-      <main className='main' ref={mainRef}>
+      <Header
+        minImageWidth={minImageWidth}
+        maxImageWidth={maxImageWidth}
+        imageWidth={imageWidth}
+        currentPage={currentPage}
+        pageCount={pageCount}
+        handleSelectAll={handleSelectAll}
+        handleDeselectAll={handleDeselectAll}
+        handleSaveClick={handleSaveClick}
+        handleImgWidthChange={handleImgWidthChange}
+      />
+      <main
+        className='main'
+        ref={mainRef}
+        style={getGridStyle()}
+      >
         {data.frames.slice(
           currentPageIndex * imagesPerPage,
           (currentPageIndex + 1) * imagesPerPage
@@ -190,7 +198,7 @@ const App = ({
               key={id}
               className={getImageClassName(realImgIndex)}
               src={url}
-              width={imageWidth}
+              style={getImageStyle(imgIndex)}
               onClick={() => handleImageClick(realImgIndex)}
               onContextMenu={(e) => {
                 e.preventDefault()
@@ -207,7 +215,10 @@ const App = ({
 App.defaultProps = {
   data,
   initialImageWidth: 300,
-  imgRatio: 300 / 177.5 // width / height
+  maxImageWidth: 400,
+  minImageWidth: 50,
+  gridGap: 5,
+  imageRatio: 300 / 168.75 // width / height
 }
 
 export default hot(App)
